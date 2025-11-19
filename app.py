@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(
-    page_title="Sleep XAI Dashboard",
+    page_title="Sleep Analysis Dashboard",
     page_icon="😴",
     layout="wide"
 )
@@ -19,7 +19,7 @@ st.write("Understand what affects your sleep using your ring data + SHAP explain
 # ---------- LOAD DATA ----------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("df_scaled.csv")
+    df = pd.read_csv("df_scaled.csv.gz", compression="gzip")
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = df.set_index("timestamp")
     return df
