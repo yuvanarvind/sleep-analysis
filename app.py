@@ -243,51 +243,95 @@ st.markdown(
 # -------------------------------------------------------
 # INTERPRETATION + SUGGESTIONS
 # -------------------------------------------------------
+# -------------------------------------------------------
+# INTERPRETATION + SUGGESTIONS
+# -------------------------------------------------------
+st.markdown("#### Interpretation")
+
+st.markdown(
+    """
+The confidence percentages above indicate how strongly each factor pushed your sleep score up or down.
+Higher percentages mean more influence—positive or negative.
+
+Broadly:
+- Stress patterns tend to raise heart rate and reduce HRV.
+- Alcohol-like effects elevate temperature and suppress HRV.
+- Caffeine near bedtime can delay sleep onset and increase restlessness.
+- Late bedtime can misalign your circadian rhythm.
+- Daytime activity builds sleep pressure and usually supports deeper sleep.
+"""
+)
+
 st.markdown("#### Personalized suggestions")
 
-# Negative contributors based on SHAP
-negative_factors = explanation_df[explanation_df["shap_value"] < 0]
+# -------------------------------------------------------
+# SHOW GENERIC SUGGESTIONS UNTIL A DATE IS SELECTED
+# -------------------------------------------------------
+generic_suggestions = [
+    "Try maintaining a consistent bedtime to support your circadian rhythm.",
+    "Lower nighttime heart rate typically supports deeper sleep.",
+    "Higher HRV usually indicates better recovery—breathing exercises can help.",
+    "Avoid caffeine or stimulants 6–8 hours before bedtime.",
+    "Create a calming pre-bed routine to reduce nighttime stress.",
+    "Alcohol close to bedtime can reduce HRV and deep sleep quality.",
+    "Daytime physical activity improves sleep pressure and recovery."
+]
 
-suggestions = []
+if selected_date is None:
+    st.write("Here are some general recommendations to help improve your sleep:")
+    for s in generic_suggestions:
+        st.write("- " + s)
 
-for _, rowf in negative_factors.iterrows():
-    feature = rowf["feature"]
-    conf = rowf["confidence_percent"]
-
-    # Map feature names to friendly text
-    if feature == "alcohol_proxy":
-        suggestions.append(f"- Alcohol-related physiological patterns reduced your sleep quality ({conf:.1f}% influence).")
-
-    elif feature == "caffeine_proxy":
-        suggestions.append(f"- Caffeine or stimulation before sleep lowered your score ({conf:.1f}%).")
-
-    elif feature == "stress_proxy":
-        suggestions.append(f"- Stress markers elevated your nighttime HR and lowered HRV ({conf:.1f}%).")
-
-    elif feature == "bedtime_proxy":
-        suggestions.append(f"- Your bedtime timing may have misaligned with your circadian rhythm ({conf:.1f}%).")
-
-    elif feature == "activity_proxy":
-        suggestions.append(f"- Lower daytime activity reduced sleep pressure ({conf:.1f}%).")
-
-    elif feature == "hr_rolling":
-        suggestions.append(f"- Higher nighttime HR limited deep sleep potential ({conf:.1f}%).")
-
-    elif feature == "hrv_rolling":
-        suggestions.append(f"- Lower HRV reduced your nightly recovery ({conf:.1f}%).")
-
-    elif feature == "motion_roll":
-        suggestions.append(f"- Increased nighttime movement reduced sleep depth ({conf:.1f}%).")
-
-    elif feature == "temp_roll":
-        suggestions.append(f"- Body temperature fluctuations impacted sleep stability ({conf:.1f}%).")
-
-    elif feature == "rr_roll":
-        suggestions.append(f"- Irregular respiration rate slightly reduced sleep quality ({conf:.1f}%).")
-
-
-if not suggestions:
-    st.write("No major negative contributors detected for this night.")
 else:
-    for s in suggestions:
-        st.write(s)
+    # -------------------------------------------------------
+    # PERSONALIZED SUGGESTIONS (SAFE, NON-ERRORING)
+    # -------------------------------------------------------
+    row = df_day.iloc[0] if len(df_day) > 0 else None
+
+    personalized_suggestions = []
+
+    if row is not None:
+
+        # Alcohol
+        if "alcohol_proxy" in row and row["alcohol_proxy"] > 0:
+            personalized_suggestions.append(
+                "Alcohol-related physiological patterns were detected; these often reduce HRV and deep sleep quality."
+            )
+
+        # HRV low
+        if "hrv_rolling" in row and pd.notna(row["hrv_rolling"]):
+            median_hrv = df["hrv_rolling"].median(skipna=True)
+            if pd.notna(median_hrv) and row["hrv_rolling"] < median_hrv:
+                personalized_suggestions.append(
+                    "Your HRV was lower than usual, which may indicate reduced recovery."
+                )
+
+        # Heart rate high
+        if "hr_rolling" in row and pd.notna(row["hr_rolling"]):
+            median_hr = df["hr_rolling"].median(skipna=True)
+            if pd.notna(median_hr) and row["hr_rolling"] > median_hr:
+                personalized_suggestions.append(
+                    "Your nighttime heart rate was elevated, which can limit deep sleep."
+                )
+
+        # Stress
+        if "stress_proxy" in row and row["stress_proxy"] > 10:
+            personalized_suggestions.append(
+                "Nighttime stress markers were relatively high. A relaxing pre-bed routine may help."
+            )
+
+        # Caffeine
+        if "caffeine_proxy" in row and row["caffeine_proxy"] > 0:
+            personalized_suggestions.append(
+                "Caffeine/stimulation before sleep was detected; consider limiting it later in the day."
+            )
+
+    # If no personalized suggestions found
+    if not personalized_suggestions:
+        personalized_suggestions.append(
+            "No strong negative lifestyle markers were detected for this night."
+        )
+
+    st.write(f"### Suggestions for {selected_date}:")
+    for s in personalized_suggestions:
+        st.write("- " + s)
