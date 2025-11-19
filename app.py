@@ -207,24 +207,24 @@ friendly = {
 
 def effect(v):
     if v > 0:
-        return "improved"
+        return "<span style='color: #1a7f37; font-weight:600;'>improved</span>"
     if v < 0:
-        return "reduced"
-    return "influenced"
+        return "<span style='color: #b91c1c; font-weight:600;'>reduced</span>"
+    return "<span style='color: #555;'>influenced</span>"
 
-st.markdown(
-    f"""
-<div style="padding: 0.5rem 0.75rem; border-left: 4px solid #4b8bbe; background-color: #f5f7fb; margin-bottom: 1rem;">
-  <p style="margin: 0 0 0.25rem 0;">
-    <strong>Predicted sleep score:</strong> {pred_score:.1f}/100
-  </p>
-  <p style="margin: 0;">
-    The numbers below show how strongly each factor contributed to this score.
-  </p>
-</div>
-""",
-    unsafe_allow_html=True,
-)
+# st.markdown(
+#     f"""
+# <div style="padding: 0.5rem 0.75rem; border-left: 4px solid #4b8bbe; background-color: #f5f7fb; margin-bottom: 1rem;">
+#   <p style="margin: 0 0 0.25rem 0;">
+#     <strong>Predicted sleep score:</strong> {pred_score:.1f}/100
+#   </p>
+#   <p style="margin: 0;">
+#     The numbers below show how strongly each factor contributed to this score.
+#   </p>
+# </div>
+# """,
+#     unsafe_allow_html=True,
+# )
 
 lines = []
 for _, row in summary_df.iterrows():
