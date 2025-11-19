@@ -1,337 +1,177 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import json
 import joblib
 import shap
-import json
 import matplotlib.pyplot as plt
-import datetime
 
-# -------------------------------------------------------
-# PAGE CONFIG
-# -------------------------------------------------------
-st.set_page_config(
-    page_title="Sleep Analysis Dashboard",
-    layout="wide"
-)
+st.set_page_config(page_title="Sleep Analysis Dashboard", layout="wide")
 
-st.title("Sleep Analysis Dashboard")
 
-# -------------------------------------------------------
-# INTRO / LANDING CONTENT
-# -------------------------------------------------------
-st.markdown(
-    """
-<div style="margin-top: 0.5rem; margin-bottom: 1.5rem;">
-  <h3>About this Dashboard</h3>
-  <p>
-    This dashboard analyzes Yuvan’s sleep data collected using the
-    <strong>Ultrahuman Ring Air</strong> over roughly 1.5 years.
-    The data covers multiple periods (with some gaps) at approximately
-    one-minute resolution.
-  </p>
-
-  <h4>Raw sensor data from the ring</h4>
-  <ul>
-    <li><strong>raw_hr</strong> – heart rate</li>
-    <li><strong>raw_hrv_2</strong> – heart rate variability</li>
-    <li><strong>raw_motion</strong> – motion intensity</li>
-    <li><strong>respiratory_rate</strong> – breathing rate (BPM)</li>
-    <li><strong>spo2</strong> – blood oxygen saturation</li>
-    <li><strong>steps</strong> – step count</li>
-    <li><strong>temp</strong> – skin temperature</li>
-    <li><strong>timestamp_epoch</strong> – sensor timestamp</li>
-  </ul>
-
-  <h4>Engineered features used for explainability</h4>
-  <ul>
-    <li>Rolling averages for HR, HRV, motion, temperature, respiratory rate</li>
-    <li>Stillness index and a derived “slowing score”</li>
-    <li>Awake flag and modeled sleep score</li>
-    <li>Five lifestyle proxies: bedtime, caffeine, alcohol, stress, activity</li>
-  </ul>
-
-  <p>
-    The goal is not just to report a score, but to explain
-    <strong>why</strong> a night was good or bad, using SHAP values
-    to attribute contributions across physiology and lifestyle.
-  </p>
-
-  <hr/>
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
-# -------------------------------------------------------
-# LOAD DATA & MODEL
-# -------------------------------------------------------
+# ---------- LOAD DATA ----------
 @st.cache_data
 def load_data():
-    # Main dataset with engineered features
-    df = pd.read_csv("df_scaled.csv.gz", compression="gzip")
+    df = pd.read_csv("df_scaled.csv.gz")
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = df.set_index("timestamp")
     return df
 
-
 @st.cache_resource
-def load_model_and_explainer():
+def load_model():
     model = joblib.load("model.pkl")
-    explainer = shap.TreeExplainer(model)
-    with open("feature_cols.json") as f:
+    explainer = joblib.load("explainer.pkl")
+    with open("feature_cols.json", "r") as f:
         feature_cols = json.load(f)
     return model, explainer, feature_cols
 
 
 df = load_data()
-model, explainer, feature_cols = load_model_and_explainer()
+model, explainer, feature_cols = load_model()
 
-# -------------------------------------------------------
-# GLOBAL SHAP FOR OVERALL BEHAVIOUR (BEESWARM)
-# -------------------------------------------------------
-@st.cache_resource
-def compute_global_shap(df, feature_cols, max_samples=2000):
-    X = df[feature_cols].dropna()
-    if len(X) > max_samples:
-        X = X.sample(max_samples, random_state=42)
-    shap_values = explainer.shap_values(X)
-    return X, shap_values
-
-
-with st.expander("Global feature importance across your data (SHAP summary)", expanded=True):
-    X_global, shap_global = compute_global_shap(df, feature_cols)
-
-    fig_global, ax_global = plt.subplots(figsize=(8, 5))
-    shap.summary_plot(
-        shap_global,
-        X_global.values,
-        feature_names=feature_cols,
-        plot_type="dot",
-        show=False
-    )
-    st.pyplot(fig_global)
-
-
-# -------------------------------------------------------
-# SIDEBAR DATE PICKER
-# -------------------------------------------------------
-st.sidebar.header("Select Date for Nightly Analysis")
-
-unique_dates = sorted(list({ts.date() for ts in df.index}))
-
-# Default: 14 Nov 2025 if present, else the most recent date
-default_date = datetime.date(2025, 11, 14)
-if default_date not in unique_dates:
-    default_date = max(unique_dates)
-
-selected_date = st.sidebar.date_input(
-    "Choose a date:",
-    value=default_date,
-    min_value=min(unique_dates),
-    max_value=max(unique_dates)
-)
-
-sel_date = pd.Timestamp(selected_date).date()
-if sel_date not in unique_dates:
-    st.warning("No data available for the selected date.")
-    st.stop()
-
-# -------------------------------------------------------
-# FILTER DATA FOR SELECTED DATE
-# -------------------------------------------------------
-df_day = df[df.index.date == sel_date]
-
-if df_day.empty:
-    st.error("No recordings available for this date.")
-    st.stop()
-
-x = df_day.iloc[[0]][feature_cols]
-
-# -------------------------------------------------------
-# PREDICT SLEEP SCORE
-# -------------------------------------------------------
-pred_score = float(model.predict(x)[0])
-
-st.markdown("## Night-level analysis")
-st.markdown(f"### Sleep score for {sel_date}  \n"
-            f"<span style='font-size: 1.4rem;'><strong>{pred_score:.1f}/100</strong></span>",
-            unsafe_allow_html=True)
-
-# -------------------------------------------------------
-# SHAP FOR SELECTED NIGHT (SINGLE ROW)
-# -------------------------------------------------------
-st.markdown("#### Feature contributions for this night")
-
-shap_single = explainer.shap_values(x)[0]
-
-fig, ax = plt.subplots(figsize=(8, 4))
-# For a single row, shap.summary_plot still works with reshape
-shap.summary_plot(
-    shap_single.reshape(1, -1),
-    x.values,
-    feature_names=feature_cols,
-    plot_type="dot",
-    show=False
-)
-st.pyplot(fig)
-
-# -------------------------------------------------------
-# SUMMARY TEXT (CLEAR / HIGHLIGHTED)
-# -------------------------------------------------------
-st.markdown("#### Factor breakdown (confidence)")
-
-shap_abs = np.abs(shap_single)
-confidence = shap_abs / shap_abs.sum() * 100
-
-summary_df = pd.DataFrame({
-    "feature": feature_cols,
-    "shap": shap_single,
-    "confidence": confidence
-}).sort_values("confidence", ascending=False)
-
-friendly = {
-    "slowing_score": "your restlessness",
-    "alcohol_proxy": "alcohol-like physiological effects",
-    "respiratory_rate": "your breathing rate",
-    "hrv_rolling": "your HRV",
-    "temp_roll": "your body temperature",
-    "hr_rolling": "your nighttime heart rate",
-    "stress_proxy": "your stress level",
-    "bedtime_proxy": "your bedtime",
-    "caffeine_proxy": "caffeine or stimulation before sleep",
-    "activity_proxy": "your physical activity",
-    "motion_roll": "your motion/stillness during sleep",
-    "rr_roll": "your average breathing rate",
-}
-
-def effect(v):
-    if v > 0:
-        return "<span style='color: #1a7f37; font-weight:600;'>improved</span>"
-    if v < 0:
-        return "<span style='color: #b91c1c; font-weight:600;'>reduced</span>"
-    return "<span style='color: #555;'>influenced</span>"
-
-# st.markdown(
-#     f"""
-# <div style="padding: 0.5rem 0.75rem; border-left: 4px solid #4b8bbe; background-color: #f5f7fb; margin-bottom: 1rem;">
-#   <p style="margin: 0 0 0.25rem 0;">
-#     <strong>Predicted sleep score:</strong> {pred_score:.1f}/100
-#   </p>
-#   <p style="margin: 0;">
-#     The numbers below show how strongly each factor contributed to this score.
-#   </p>
-# </div>
-# """,
-#     unsafe_allow_html=True,
-# )
-
-lines = []
-for _, row in summary_df.iterrows():
-    label = friendly.get(row["feature"], row["feature"])
-    conf_str = f"{row['confidence']:.1f}%"
-    eff = effect(row["shap"])
-    lines.append(
-        f"<li><strong>{conf_str}</strong> &rarr; {label} <strong>{eff}</strong> your sleep score</li>"
-    )
-
-st.markdown(
-    "<ul style='margin-top: 0.2rem;'>" + "\n".join(lines) + "</ul>",
-    unsafe_allow_html=True,
-)
-
-# -------------------------------------------------------
-# INTERPRETATION + SUGGESTIONS
-# -------------------------------------------------------
-# -------------------------------------------------------
-# INTERPRETATION + SUGGESTIONS
-# -------------------------------------------------------
-st.markdown("#### Interpretation")
-
-st.markdown(
-    """
-The confidence percentages above indicate how strongly each factor pushed your sleep score up or down.
-Higher percentages mean more influence—positive or negative.
-
-Broadly:
-- Stress patterns tend to raise heart rate and reduce HRV.
-- Alcohol-like effects elevate temperature and suppress HRV.
-- Caffeine near bedtime can delay sleep onset and increase restlessness.
-- Late bedtime can misalign your circadian rhythm.
-- Daytime activity builds sleep pressure and usually supports deeper sleep.
-"""
-)
-
-st.markdown("#### Personalized suggestions")
-
-# -------------------------------------------------------
-# SHOW GENERIC SUGGESTIONS UNTIL A DATE IS SELECTED
-# -------------------------------------------------------
-generic_suggestions = [
-    "Try maintaining a consistent bedtime to support your circadian rhythm.",
-    "Lower nighttime heart rate typically supports deeper sleep.",
-    "Higher HRV usually indicates better recovery—breathing exercises can help.",
-    "Avoid caffeine or stimulants 6–8 hours before bedtime.",
-    "Create a calming pre-bed routine to reduce nighttime stress.",
-    "Alcohol close to bedtime can reduce HRV and deep sleep quality.",
-    "Daytime physical activity improves sleep pressure and recovery."
+# Limit to the 5 proxy features ONLY
+proxy_features = [
+    "alcohol_proxy",
+    "caffeine_proxy",
+    "stress_proxy",
+    "bedtime_proxy",
+    "activity_proxy"
 ]
 
+st.title("Sleep Analysis Dashboard")
+st.markdown("""
+This dashboard analyzes **sleep-quality signals** collected from Yuvan’s Ultrahuman Ring Air over ~1.5 years.
+
+### What the raw data includes:
+- Heart rate  
+- Heart rate variability (HRV)  
+- Motion & restlessness  
+- Temperature trends  
+- Breathing rate  
+- SpO2  
+- Steps  
+- Behavioral proxies (alcohol, caffeine, stress, bedtime, activity)
+
+All data is cleaned, aligned to 1-minute intervals, engineered, and fed into an ML model.  
+Selecting a date will generate a **predicted sleep score** and explain **which lifestyle factors influenced it**.
+""")
+
+# ---------- SIDEBAR DATE PICKER ----------
+unique_dates = sorted(df.index.date)
+default_date = unique_dates[-1]
+
+selected_date = st.sidebar.selectbox("Choose a date to analyze:", options=unique_dates, index=len(unique_dates)-1)
+
+
+# ---------- GENERIC SUMMARY ON LOAD ----------
 if selected_date is None:
-    st.write("Here are some general recommendations to help improve your sleep:")
-    for s in generic_suggestions:
-        st.write("- " + s)
+    st.subheader("Sleep Score Insights")
+    st.info("Select a date to view your sleep score analysis.")
+    st.stop()
 
-else:
-    # -------------------------------------------------------
-    # PERSONALIZED SUGGESTIONS (SAFE, NON-ERRORING)
-    # -------------------------------------------------------
-    row = df_day.iloc[0] if len(df_day) > 0 else None
 
-    personalized_suggestions = []
+# ---------- FETCH DAY DATA ----------
+df_day = df[df.index.date == selected_date]
 
-    if row is not None:
+if len(df_day) == 0:
+    st.warning("No data available for this date.")
+    st.stop()
 
-        # Alcohol
-        if "alcohol_proxy" in row and row["alcohol_proxy"] > 0:
-            personalized_suggestions.append(
-                "Alcohol-related physiological patterns were detected; these often reduce HRV and deep sleep quality."
-            )
+# ---------- PREDICT SCORE ----------
+X_day = df_day[feature_cols]
+pred_score = float(model.predict(X_day.mean().to_frame().T)[0])
 
-        # HRV low
-        if "hrv_rolling" in row and pd.notna(row["hrv_rolling"]):
-            median_hrv = df["hrv_rolling"].median(skipna=True)
-            if pd.notna(median_hrv) and row["hrv_rolling"] < median_hrv:
-                personalized_suggestions.append(
-                    "Your HRV was lower than usual, which may indicate reduced recovery."
-                )
 
-        # Heart rate high
-        if "hr_rolling" in row and pd.notna(row["hr_rolling"]):
-            median_hr = df["hr_rolling"].median(skipna=True)
-            if pd.notna(median_hr) and row["hr_rolling"] > median_hr:
-                personalized_suggestions.append(
-                    "Your nighttime heart rate was elevated, which can limit deep sleep."
-                )
+# ---------- SHAP FOR ONE ROW ----------
+row_for_shap = X_day.iloc[[0]]
+shap_values = explainer(row_for_shap)
+shap_single = shap_values.values[0]
 
-        # Stress
-        if "stress_proxy" in row and row["stress_proxy"] > 10:
-            personalized_suggestions.append(
-                "Nighttime stress markers were relatively high. A relaxing pre-bed routine may help."
-            )
+# Filter to only proxy features
+proxy_indices = [feature_cols.index(f) for f in proxy_features]
+proxy_shap_values = shap_single[proxy_indices]
+proxy_names = [feature_cols[i] for i in proxy_indices]
 
-        # Caffeine
-        if "caffeine_proxy" in row and row["caffeine_proxy"] > 0:
-            personalized_suggestions.append(
-                "Caffeine/stimulation before sleep was detected; consider limiting it later in the day."
-            )
+# Confidence percentages
+shap_abs = np.abs(proxy_shap_values)
+confidence_scores = shap_abs / shap_abs.sum() * 100
 
-    # If no personalized suggestions found
-    if not personalized_suggestions:
-        personalized_suggestions.append(
-            "No strong negative lifestyle markers were detected for this night."
-        )
 
-    st.write(f"### Suggestions for {selected_date}:")
-    for s in personalized_suggestions:
-        st.write("- " + s)
+# ---------- DOMAIN-AWARE DIRECTION ----------
+def direction_override(feature, shap_value):
+    negative = ["alcohol_proxy", "stress_proxy", "caffeine_proxy"]
+    positive = ["activity_proxy", "bedtime_proxy"]
+
+    if feature in negative:
+        return "reduced"
+    if feature in positive:
+        return "improved"
+    return "influenced"
+
+
+def colored(word, meaning):
+    if meaning == "improved":
+        return f"<span style='color:green;font-weight:600'>{word}</span>"
+    if meaning == "reduced":
+        return f"<span style='color:red;font-weight:600'>{word}</span>"
+    return word
+
+
+# ---------- RESULTS ----------
+st.subheader(f"Predicted Sleep Score for {selected_date}: **{pred_score:.1f}/100**")
+
+# ---------- SHAP BREAKDOWN ----------
+st.markdown("### Factor Contribution Breakdown")
+
+for feature, shap_val, conf in zip(proxy_names, proxy_shap_values, confidence_scores):
+    direction = direction_override(feature, shap_val)
+    colored_word = colored(direction, direction)
+    st.markdown(
+        f"**{conf:.1f}%** → {feature.replace('_proxy','').title()} "
+        f"**{colored_word}** your sleep score"
+        , unsafe_allow_html=True
+    )
+
+
+# ---------- SHAP BEESWARM-LIKE CHART ----------
+st.markdown("### Visual Contribution Chart")
+
+fig, ax = plt.subplots(figsize=(6,4))
+colors = ["green" if direction_override(f, v)=="improved" else "red" for f, v in zip(proxy_names, proxy_shap_values)]
+ax.barh(proxy_names, proxy_shap_values, color=colors)
+ax.set_xlabel("SHAP value (impact on prediction)")
+ax.invert_yaxis()
+st.pyplot(fig)
+
+
+# ---------- INTERPRETATION ----------
+st.markdown("### Interpretation")
+st.write("""
+These percentages represent how strongly each lifestyle factor influenced your sleep score.
+Positive contributions help your sleep.  
+Negative contributions reduce recovery or deep sleep quality.
+""")
+
+
+# ---------- SUGGESTIONS ----------
+st.markdown("### Personalized Suggestions")
+
+row = df_day.iloc[0]
+suggestions = []
+
+if row.get("alcohol_proxy", 0) > 0:
+    suggestions.append("Alcohol-like physiology detected — this often suppresses HRV & deep sleep.")
+if row.get("stress_proxy", 0) > 20:
+    suggestions.append("Your body showed stress-like signals. Consider unwinding earlier.")
+if row.get("caffeine_proxy", 0) > 0:
+    suggestions.append("Caffeine-like stimulation detected before bedtime.")
+if row.get("bedtime_proxy", 0) < df["bedtime_proxy"].median():
+    suggestions.append("Your sleep timing was irregular; this can reduce restorative deep sleep.")
+if row.get("activity_proxy", 0) < df["activity_proxy"].median():
+    suggestions.append("Low daily activity detected — gentle workouts often improve sleep pressure.")
+
+if not suggestions:
+    suggestions.append("No strong negative lifestyle markers detected for this night.")
+
+for s in suggestions:
+    st.write("- " + s)
