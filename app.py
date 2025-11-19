@@ -243,40 +243,51 @@ st.markdown(
 # -------------------------------------------------------
 # INTERPRETATION + SUGGESTIONS
 # -------------------------------------------------------
-st.markdown("#### Interpretation")
-
-st.markdown(
-    """
-The confidence percentages above indicate how strongly each factor pushed your sleep score up or down.
-Higher percentages mean more influence—positive or negative.
-
-Broadly:
-- Stress patterns tend to raise heart rate and reduce HRV.
-- Alcohol-like effects elevate temperature and suppress HRV.
-- Caffeine near bedtime can delay sleep onset and increase restlessness.
-- Late bedtime can misalign your circadian rhythm.
-- Daytime activity builds sleep pressure and usually supports deeper sleep.
-"""
-)
-
 st.markdown("#### Personalized suggestions")
 
-row = df_day.iloc[0]
+# Negative contributors based on SHAP
+negative_factors = explanation_df[explanation_df["shap_value"] < 0]
+
 suggestions = []
 
-if "alcohol_proxy" in row and row["alcohol_proxy"] > 0:
-    suggestions.append("Alcohol-related patterns were present; these often reduce HRV and deep sleep quality.")
-if "hrv_rolling" in row and row["hrv_rolling"] < df["hrv_rolling"].median():
-    suggestions.append("HRV was below your typical baseline, indicating reduced recovery.")
-if "hr_rolling" in row and row["hr_rolling"] > df["hr_rolling"].median():
-    suggestions.append("Nighttime heart rate was elevated, which can limit deep sleep.")
-if "stress_proxy" in row and row["stress_proxy"] > 10:
-    suggestions.append("Nighttime stress markers were elevated. A calmer pre-bed routine may help.")
-if "caffeine_proxy" in row and row["caffeine_proxy"] > 0:
-    suggestions.append("Caffeine/stimulation was detected before sleep; consider limiting it later in the day.")
+for _, rowf in negative_factors.iterrows():
+    feature = rowf["feature"]
+    conf = rowf["confidence_percent"]
+
+    # Map feature names to friendly text
+    if feature == "alcohol_proxy":
+        suggestions.append(f"- Alcohol-related physiological patterns reduced your sleep quality ({conf:.1f}% influence).")
+
+    elif feature == "caffeine_proxy":
+        suggestions.append(f"- Caffeine or stimulation before sleep lowered your score ({conf:.1f}%).")
+
+    elif feature == "stress_proxy":
+        suggestions.append(f"- Stress markers elevated your nighttime HR and lowered HRV ({conf:.1f}%).")
+
+    elif feature == "bedtime_proxy":
+        suggestions.append(f"- Your bedtime timing may have misaligned with your circadian rhythm ({conf:.1f}%).")
+
+    elif feature == "activity_proxy":
+        suggestions.append(f"- Lower daytime activity reduced sleep pressure ({conf:.1f}%).")
+
+    elif feature == "hr_rolling":
+        suggestions.append(f"- Higher nighttime HR limited deep sleep potential ({conf:.1f}%).")
+
+    elif feature == "hrv_rolling":
+        suggestions.append(f"- Lower HRV reduced your nightly recovery ({conf:.1f}%).")
+
+    elif feature == "motion_roll":
+        suggestions.append(f"- Increased nighttime movement reduced sleep depth ({conf:.1f}%).")
+
+    elif feature == "temp_roll":
+        suggestions.append(f"- Body temperature fluctuations impacted sleep stability ({conf:.1f}%).")
+
+    elif feature == "rr_roll":
+        suggestions.append(f"- Irregular respiration rate slightly reduced sleep quality ({conf:.1f}%).")
+
 
 if not suggestions:
-    suggestions.append("No strong negative lifestyle markers were detected for this night based on the proxies.")
-
-for s in suggestions:
-    st.write("- " + s)
+    st.write("No major negative contributors detected for this night.")
+else:
+    for s in suggestions:
+        st.write(s)
