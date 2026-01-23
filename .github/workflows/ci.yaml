@@ -1,4 +1,4 @@
-name: sleep_analysis_smoke_test
+name: CI smoke test
 
 on:
   pull_request:
@@ -13,19 +13,14 @@ jobs:
       MOMENTIC_API_KEY: ${{ secrets.MOMENTIC_API_KEY }}
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
+      - run: npm install
 
-      - name: Install browsers for Momentic
-        run: npx momentic install-browsers --all
+      - run: npx momentic install-browsers --all
 
-      - name: Run Momentic smoke test
-        run: npx momentic run tests/cli-test-run.test.yaml
+      - run: npx momentic run tests/cli-test-run.test.yaml --api-key $MOMENTIC_API_KEY
