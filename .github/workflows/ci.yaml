@@ -3,7 +3,7 @@ name: sleep_analysis_smoke_test
 on:
   pull_request:
   push:
-    branches: ["main"]
+    branches: ["main", "momentic-demo"]
 
 jobs:
   test:
