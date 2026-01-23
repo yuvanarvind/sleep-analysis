@@ -1,0 +1,8 @@
+{
+    "name": "momentic-ci-demo",
+    "private": true,
+    "devDependencies": {
+      "momentic": "latest"
+    }
+  }
+  

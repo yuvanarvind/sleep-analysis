@@ -1,0 +1,3 @@
+testDir: tests
+browser:
+  headless: true
