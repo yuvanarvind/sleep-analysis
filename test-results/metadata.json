@@ -1,20 +1,20 @@
 {
   "gitProtectedBranches": [],
   "ciProvider": "none",
-  "gitCommitSha": "a213522e2105933c284e5991560a72fe87dda7d1",
-  "gitCommitShaShort": "a213522e",
+  "gitCommitSha": "6f4b95a78a8c626bc4283fd0c7aa60257f74f6b6",
+  "gitCommitShaShort": "6f4b95a7",
   "gitBranchName": "momentic-demo",
   "gitOriginUrl": "https://github.com/yuvanarvind/sleep-analysis.git",
-  "gitCommitTimestamp": "2026-01-23T20:29:34.000Z",
-  "gitCommitMessage": "add momentic test",
+  "gitCommitTimestamp": "2026-01-23T22:16:49.000Z",
+  "gitCommitMessage": "fixing yaml format issues - name",
   "gitCommitAuthorName": "Yuvan Arvind",
   "githubRepository": "yuvanarvind/sleep-analysis",
-  "id": "0be71d6a-a705-4003-9444-4dcdbfdbc0fd",
+  "id": "b20c7f0d-598a-4efc-8583-2d48bfde845b",
   "trigger": "CLI",
-  "startedAt": "2026-01-23T21:32:45.018Z",
+  "startedAt": "2026-01-23T22:19:27.090Z",
   "status": "PASSED",
   "cliVersion": "2.35.1",
   "labels": [],
-  "updatedAt": "2026-01-23T21:33:06.801Z",
-  "finishedAt": "2026-01-23T21:33:06.801Z"
+  "updatedAt": "2026-01-23T22:19:50.842Z",
+  "finishedAt": "2026-01-23T22:19:50.842Z"
 }

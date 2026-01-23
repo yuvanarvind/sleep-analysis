@@ -3,7 +3,7 @@ name: sleep_analysis_smoke_test
 on:
   pull_request:
   push:
-    branches: ["main", "momentic-demo"]
+    branches: ["main"]
 
 jobs:
   test:
@@ -28,4 +28,4 @@ jobs:
         run: npx momentic install-browsers --all
 
       - name: Run Momentic smoke test
-        run: npx momentic run tests/cli-test-run.test.yaml --api-key $MOMENTIC_API_KEY
+        run: npx momentic run tests/cli-test-run.test.yaml
