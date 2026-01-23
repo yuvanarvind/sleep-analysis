@@ -2,7 +2,27 @@
     "name": "momentic-ci-demo",
     "private": true,
     "devDependencies": {
-      "momentic": "latest"
-    }
-  }
-  
+        "momentic": "^2.35.1"
+    },
+    "version": "1.0.0",
+    "description": "Sleep Analysis",
+    "main": "index.js",
+    "directories": {
+        "test": "tests"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yuvanarvind/sleep-analysis.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "bugs": {
+        "url": "https://github.com/yuvanarvind/sleep-analysis/issues"
+    },
+    "homepage": "https://github.com/yuvanarvind/sleep-analysis#readme"
+}

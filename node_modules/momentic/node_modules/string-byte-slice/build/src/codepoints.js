@@ -1,0 +1,21 @@
+
+export const LAST_ASCII_CODEPOINT=127;
+
+
+export const LAST_TWO_BYTES_CODEPOINT=2047;
+
+
+
+
+
+export const FIRST_HIGH_SURROGATE=55296;
+export const LAST_HIGH_SURROGATE=56319;
+export const FIRST_LOW_SURROGATE=56320;
+export const LAST_LOW_SURROGATE=57343;
+
+
+
+
+export const SURROGATE_REGEXP=/[\uD800-\uDFFF]/gu;
+
+export const SURROGATE_REPLACE_CHAR="\uFFFD";
