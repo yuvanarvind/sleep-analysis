@@ -3,7 +3,7 @@ name: CI – Sleep Analysis smoke test
 on:
   pull_request:
   push:
-    branches: ["main"]
+    branches: ["main", "momentic-demo"]
 
 jobs:
   test:

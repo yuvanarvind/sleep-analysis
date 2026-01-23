@@ -1,7 +1,4 @@
-name: Sleep Analysis Smoke Test
-
-testDir: tests
+name: "Sleep Analysis Smoke Test"  # must be a string
+testDir: "tests"                   # directory containing your test YAMLs
 tests:
-  - path: tests/cli-test-run.test.yaml
-browser:
-  headless: true
+  - path: "tests/cli-test-run.test.yaml"
