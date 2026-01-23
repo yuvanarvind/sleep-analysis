@@ -1,0 +1,55 @@
+fileType: momentic/test
+id: 1908104b-7a19-4d6d-9f72-8baa21b912ca
+name: cli-test-run
+baseUrl: https://sleep-analysis.streamlit.app/
+description: execute this from terminal
+schemaVersion: 1.0.22
+advanced:
+  viewport:
+    width: 1920
+    height: 1080
+  browserType: Chromium
+retries: 1
+steps:
+  - id: 8878fce4-66bc-4ef5-b065-3f1cc2fc6e5a
+    type: PRESET_ACTION
+    command:
+      id: a77f5ed1-59a2-4572-9721-ec91361c588c
+      type: AI_ASSERTION
+      assertion: Check if there is title on the page called "Sleep Analysis Dashboard"
+  - id: 8719ab4b-1456-489b-b36d-7ea4d485d9b0
+    type: PRESET_ACTION
+    command:
+      id: 7b0b0c24-9527-4562-bb2b-356ff930787f
+      iframeUrl: //sleep-analysis.streamlit.app/~/+/
+      type: CLICK
+      target:
+        type: description
+        elementDescriptor: the date textbox in the left sidebar labeled 'Choose a date'
+          (date input)
+  - id: 9e5fda6d-853f-4efb-9b2b-05e1ef9ae73d
+    type: PRESET_ACTION
+    command:
+      id: 2f4db312-7b8d-42d3-bb21-0807f0b85311
+      iframeUrl: //sleep-analysis.streamlit.app/~/+/
+      type: CLICK
+      target:
+        type: description
+        elementDescriptor: the calendar gridcell for Tuesday November 11th 2025 (date
+          11) in the open datepicker
+  - id: 1a4a2d60-9810-4113-93d3-1b3db2dc9d88
+    type: PRESET_ACTION
+    command:
+      id: c3ff7300-ca30-442e-90b4-fe90fab63666
+      iframeUrl: //sleep-analysis.streamlit.app/~/+/
+      target:
+        type: description
+        elementDescriptor: Night-level analysis
+      type: SCROLL_DOWN
+      deltaY: 200
+  - id: 4759eb7a-4d32-4a9a-90a3-13187b572de9
+    type: PRESET_ACTION
+    command:
+      id: b16b0fc6-e528-438c-a482-6b1c1cceb872
+      type: AI_ASSERTION
+      assertion: the sleep score value is displayed under Sleep score subheading
