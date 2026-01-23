@@ -1,0 +1,6 @@
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      MOMENTIC_API_KEY: ${{ secrets.MOMENTIC_API_KEY }}

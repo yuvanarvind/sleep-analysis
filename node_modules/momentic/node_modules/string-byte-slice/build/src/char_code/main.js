@@ -1,0 +1,23 @@
+import{replaceInvalidSurrogate}from"../surrogate.js";
+
+import{byteToChar}from"./direction.js";
+
+
+export const charCodeSlice=(input,byteStart,byteEnd)=>{
+const charStart=byteToChar(input,byteStart,false);
+const charEnd=getByteEnd(input,byteEnd);
+const inputA=
+charStart===0&&charEnd===undefined?
+input:
+input.slice(charStart,charEnd);
+return replaceInvalidSurrogate(inputA)
+};
+
+const getByteEnd=(input,byteEnd)=>{
+if(byteEnd===undefined){
+return byteEnd
+}
+
+const charEnd=byteToChar(input,byteEnd,true);
+return charEnd===input.length?undefined:charEnd
+};
