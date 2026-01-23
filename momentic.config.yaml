@@ -1,3 +1,7 @@
+name: Sleep Analysis Smoke Test
+
 testDir: tests
+tests:
+  - path: tests/cli-test-run.test.yaml
 browser:
   headless: true
