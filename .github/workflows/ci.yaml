@@ -1,4 +1,4 @@
-name: CI – Sleep Analysis smoke test
+name: sleep_analysis_smoke_test
 
 on:
   pull_request:

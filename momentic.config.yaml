@@ -1,4 +1,4 @@
-name: "Sleep Analysis Smoke Test"  # must be a string
-testDir: "tests"                   # directory containing your test YAMLs
+name: sleep_analysis_smoke_test # must be a string
+testDir: tests                  # directory containing your test YAMLs
 tests:
-  - path: "tests/cli-test-run.test.yaml"
+  - path: tests/cli-test-run.test.yaml
