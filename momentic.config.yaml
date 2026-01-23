@@ -1,4 +1,4 @@
-name: sleep_analysis_smoke_test
+name: "test"
 
 tests:
   - path: tests/cli-test-run.test.yaml
