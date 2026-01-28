@@ -1,4 +1,4 @@
-name: CI – Sleep Analysis smoke test
+name: CI – Momentic Smoke Test
 
 on:
   pull_request:
@@ -8,24 +8,40 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     env:
       MOMENTIC_API_KEY: ${{ secrets.MOMENTIC_API_KEY }}
 
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
+      # 3️⃣ Install dependencies
+      - name: Install NPM dependencies
         run: npm install
 
-      - name: Install browsers for Momentic
+      # 4️⃣ Verify files exist
+      - name: Verify test files
+        run: |
+          echo "Root folder contents:"
+          ls -la
+          echo "Tests folder contents:"
+          ls -la tests
+          echo "Momentic config:"
+          cat momentic.config.yaml
+
+      # 5️⃣ Install Momentic browsers
+      - name: Install Momentic browsers
         run: npx momentic install-browsers --all
 
-      - name: Run Momentic smoke test
+      # 6️⃣ Run Momentic smoke test
+      - name: Run Momentic test
         run: npx momentic run tests/cli-test-run.test.yaml --api-key $MOMENTIC_API_KEY

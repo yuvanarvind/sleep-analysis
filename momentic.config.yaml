@@ -1,4 +1,7 @@
-name: "Sleep Analysis Smoke Test"  # must be a string
-testDir: "tests"                   # directory containing your test YAMLs
-tests:
-  - path: "tests/cli-test-run.test.yaml"
+name: test
+ai:
+  agentConfig:
+    locator: v3
+    assertion: v3
+    visual-assertion: v3
+    text-extraction: v3
