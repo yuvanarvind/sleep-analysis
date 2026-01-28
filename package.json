@@ -2,7 +2,7 @@
     "name": "momentic-ci-demo",
     "private": true,
     "devDependencies": {
-        "momentic": "^2.35.1"
+        "momentic": "^2.37.0"
     },
     "version": "1.0.0",
     "description": "Sleep Analysis",
